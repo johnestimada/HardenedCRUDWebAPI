@@ -1,0 +1,68 @@
+@host = http://localhost:5250
+
+### Part 1: invalid product -> 400 (checkpoint: paste this body)
+POST {{host}}/api/products
+Content-Type: application/json
+
+{ "name": "", "sku": "", "price": -5 }
+
+### Part 2: custom rule (SalePrice >= Price) -> 400 "SalePrice must be less than Price."
+POST {{host}}/api/products
+Content-Type: application/json
+
+{ "name": "Keyboard", "sku": "KEY-001", "price": 10, "salePrice": 20 }
+
+### Part 4: valid product -> 201 + Location header (checkpoint)
+POST {{host}}/api/products
+Content-Type: application/json
+
+{ "name": "Keyboard", "sku": "KEY-001", "price": 60, "salePrice": 50 }
+
+### Add two more so paging has something to show
+POST {{host}}/api/products
+Content-Type: application/json
+
+{ "name": "Mouse", "sku": "MOU-001", "price": 25 }
+
+###
+POST {{host}}/api/products
+Content-Type: application/json
+
+{ "name": "Monitor", "sku": "MON-001", "price": 330 }
+
+### Duplicate SKU (case-insensitive) -> 409 Conflict
+POST {{host}}/api/products
+Content-Type: application/json
+
+{ "name": "Another Keyboard", "sku": "key-001", "price": 60 }
+
+### Part 3/4: missing id -> 404 Problem Details (checkpoint; also copy the server log line)
+GET {{host}}/api/products/9999
+
+### Part 4: paged list -> 200 { data, meta } (checkpoint)
+GET {{host}}/api/products?page=1&pageSize=2
+
+### Bad paging -> 400
+GET {{host}}/api/products?page=0&pageSize=500
+
+### Update -> 200
+PUT {{host}}/api/products/1
+Content-Type: application/json
+
+{ "name": "Keyboard Pro", "sku": "KEY-001", "price": 80 }
+
+### Custom rule must ALSO work on PUT -> 400
+PUT {{host}}/api/products/1
+Content-Type: application/json
+
+{ "name": "Keyboard Pro", "sku": "KEY-001", "price": 80, "salePrice": 90 }
+
+### Delete -> 204 (no body)
+DELETE {{host}}/api/products/3
+
+### Unknown route -> 404 Problem Details (thanks to UseStatusCodePages)
+GET {{host}}/api/nothing-here
+
+### To see a 500: temporarily add `throw new Exception("boom");` at the top of GetAll in the
+### service, call the list endpoint, and confirm the client gets NO stack trace while the
+### terminal log shows the full one. Remove the line afterwards.
